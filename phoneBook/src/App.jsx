@@ -14,6 +14,7 @@ function App() {
 const [persons, setPersons] = useState([{name:'Fabian Nobert'}])
 const [newName, setNewName] = useState('a new name...')
 console.log('list of persons', persons)
+console.log('what is new Name?', newName)
 
 
 
@@ -31,7 +32,11 @@ setNewName('')
 
 const handleNewName = (e)=> {
 const inputValue = e.target.value
-console.log('new name input', inputValue)
+console.log('What is inputValue', inputValue)
+if(persons.some(person => person.name === inputValue)){
+alert(`${inputValue} is already added to phonebook`)
+
+}
 setNewName(inputValue)
 }
 
