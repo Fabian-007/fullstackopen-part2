@@ -1,54 +1,33 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
+import axios from 'axios'
+import PersonsForm from './components/Form';
+import InputField from "./components/Input";
+import Button from "./components/button";
+import Persons from "./components/contact";
 
-const Persons = (props) => {
-  console.log("props value", props);
-  const { person } = props;
-  return (
-    <>
-      <p>
-        {person.name} - {person.number}
-      </p>
-    </>
-  );
-};
 
-const InputField = ({ label, value, onChange }) => {
-  return (
-    <div>
-      <label>{label}</label>
-      <input value={value} onChange={onChange} />
-    </div>
-  );
-};
 
-const PersonsForm = ({children, onSubmit}) => {
-  // console.log("form props", props);
-  return (
-    <form onSubmit={onSubmit}>
-     {children}
-    </form>
-  );
-};
-
-const Button = ({text, type}) => {
-  // console.log('button props', props)
-
-  return <button type = {type}>{text}</button>
-}
 
 function App() {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456", id: 1 },
-    { name: "Ada Lovelace", number: "39-44-5323523", id: 2 },
-    { name: "Dan Abramov", number: "12-43-234345", id: 3 },
-    { name: "Mary Poppendieck", number: "39-23-6423122", id: 4 },
-  ]);
+  const [persons, setPersons] = useState([]);
 
   const [newName, setNewName] = useState("a new name...");
   const [number, setNumber] = useState("eg. 11-22-3333333");
   const [searchTerm, setSearchTerm] = useState("");
   console.log("list of persons", persons);
   console.log("what is new Name?", newName);
+
+
+  const hooks = ()=> {
+  const promise = axios.get('http://localhost:3002/persons')
+  promise.then(response => {
+  setPersons(response.data)
+})
+  console.log('promise??', promise)
+  }
+
+  useEffect(hooks, [])
+  console.log('render', persons.length, 'contacts')
 
   //filtering displayed element
   const personToShow = persons.filter((person) =>
