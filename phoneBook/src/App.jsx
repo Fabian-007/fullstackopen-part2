@@ -1,12 +1,9 @@
 import { use, useEffect, useState } from "react";
-import axios from 'axios'
-import PersonsForm from './components/Form';
+import personService from "./service/persons";
+import PersonsForm from "./components/Form";
 import InputField from "./components/Input";
 import Button from "./components/button";
 import Persons from "./components/contact";
-
-
-
 
 function App() {
   const [persons, setPersons] = useState([]);
@@ -17,44 +14,99 @@ function App() {
   console.log("list of persons", persons);
   console.log("what is new Name?", newName);
 
+  //empty array dependency, only runs the first time the component is rendered
+  useEffect(() => {
+    personService.getAll().then((initialPersons) => {
+      console.log("initial persons", initialPersons);
+      setPersons(initialPersons);
+    });
+  }, []);
+  console.log("render", persons.length, "contacts");
 
-  const hooks = ()=> {
-  const promise = axios.get('http://localhost:3002/persons')
-  promise.then(response => {
-  setPersons(response.data)
-})
-  console.log('promise??', promise)
-  }
-
-  useEffect(hooks, [])
-  console.log('render', persons.length, 'contacts')
-
-  //filtering displayed element
+  //filtering element to display
   const personToShow = persons.filter((person) =>
     person.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   console.log("person to show", personToShow);
 
   const handleAdd = (e) => {
     e.preventDefault();
     console.log(e.target);
-    const namesObject = {
-      name: newName,
-      number: number,
-      id: persons.length + 1,
-    };
-    if (
-      persons.some(
-        (person) => person.name === newName || person.number === number
-      )
-    ) {
-      alert(`${newName} or ${number} is already added to phonebook`);
-      return;
+    // if (
+    //   persons.some(
+    //     (person) => person.name === newName || person.number === number
+    //   )
+    // ) {
+    //   alert(`${newName} or ${number} is already added to phonebook`);
+    //   return;
+    // }
+
+    const person = persons.find(
+      (p) => p.name.toLowerCase() === newName.toLowerCase()
+    );
+    console.log("PERSON", person);
+    if (person) {
+      const confirmUpdate = window.confirm(
+        `${newName} is already added to phonebook, replace the old number with new one?`
+      );
+
+      if (confirmUpdate) {
+        const changedPerson = { ...person, number: number };
+        personService
+          .update(person.id, changedPerson)
+          .then((returnedPerson) => {
+            console.log("updated person?", returnedPerson);
+            setPersons(
+              persons.map((p) => p.id === person.id ? returnedPerson : p)
+            );
+            setNewName("");
+            setNumber("");
+          })
+          .catch((error) => {
+            alert(`Failed to  update ${newName}'s number`);
+            setPersons(persons.filter((p) => p.id !== person.id));
+          });
+      }
+    } else {
+      const newPerson = {
+        name: newName,
+        number: number,
+      };
+      personService
+        .create(newPerson)
+        .then((returnedPerson) => {
+          console.log("POST RESPONSE", returnedPerson);
+          setPersons(persons.concat(returnedPerson));
+          setNewName("");
+          setNumber("");
+        })
+        .catch((error) => {
+          alert("Failed to add new person");
+        });
     }
-    setPersons(persons.concat(namesObject));
-    setNewName("");
-    setNumber("");
+  };
+
+  const deletePersons = (id) => {
+    const person = persons.find((p) => p.id === id);
+    if (!person) return;
+    personService
+      .remove(id)
+      .then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
+      })
+      .catch((error) => {
+        alert("Delete failed", error);
+      });
+  };
+
+  const handleDelete = (id, name) => {
+    const confirm = window.confirm(`Delete ${name}?`);
+    if (confirm) {
+      deletePersons(id);
+      alert("item deleted");
+    } else {
+      alert("user cancelled the action");
+    }
   };
 
   const handleNewName = (e) => {
@@ -90,14 +142,19 @@ function App() {
         <InputField label={"name:"} value={newName} onChange={handleNewName} />
         <InputField label={" number:"} value={number} onChange={handleNumber} />
 
-      <Button type="submit" text = "add"/>
-  
+        <Button type="submit" text="add" />
       </PersonsForm>
 
       <div>
         <h2>Numbers</h2>
         {personToShow.map((person) => (
-          <Persons key={person.id} person={person} />
+          <Persons
+            key={person.id}
+            person={person}
+            handleDelete={() =>
+              handleDelete(person.id, person.name, person.number)
+            }
+          />
         ))}
       </div>
     </>
