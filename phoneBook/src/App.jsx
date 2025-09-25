@@ -4,15 +4,28 @@ import PersonsForm from "./components/Form";
 import InputField from "./components/Input";
 import Button from "./components/button";
 import Persons from "./components/contact";
+import Notification from "./components/notification";
 
 function App() {
   const [persons, setPersons] = useState([]);
 
-  const [newName, setNewName] = useState("a new name...");
-  const [number, setNumber] = useState("eg. 11-22-3333333");
+  const [newName, setNewName] = useState("");
+  const [number, setNumber] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [notification, setNotification] = useState(null)
+  const [notificationType, setNotificationType] = useState('success')
+
   console.log("list of persons", persons);
   console.log("what is new Name?", newName);
+
+  //utils
+  const showNotification = (msg, type = 'success') =>{
+    setNotification(msg)
+    setNotificationType(type)
+    setTimeout(()=> {
+      setNotification(null)
+    }, 5000)
+  }
 
   //empty array dependency, only runs the first time the component is rendered
   useEffect(() => {
@@ -32,14 +45,6 @@ function App() {
   const handleAdd = (e) => {
     e.preventDefault();
     console.log(e.target);
-    // if (
-    //   persons.some(
-    //     (person) => person.name === newName || person.number === number
-    //   )
-    // ) {
-    //   alert(`${newName} or ${number} is already added to phonebook`);
-    //   return;
-    // }
 
     const person = persons.find(
       (p) => p.name.toLowerCase() === newName.toLowerCase()
@@ -61,9 +66,10 @@ function App() {
             );
             setNewName("");
             setNumber("");
+            showNotification(`updated ${returnedPerson.name}'s number`)
           })
-          .catch((error) => {
-            alert(`Failed to  update ${newName}'s number`);
+          .catch(() => {
+            showNotification(`Failed to  update ${person.name}'s number`, 'error');
             setPersons(persons.filter((p) => p.id !== person.id));
           });
       }
@@ -72,16 +78,22 @@ function App() {
         name: newName,
         number: number,
       };
+      
+      if(newName === "" || number === ""){
+      return showNotification('enter both input fields', 'error')
+      }
       personService
         .create(newPerson)
         .then((returnedPerson) => {
           console.log("POST RESPONSE", returnedPerson);
+
           setPersons(persons.concat(returnedPerson));
           setNewName("");
           setNumber("");
+          showNotification(` Added ${returnedPerson.name}`)
         })
-        .catch((error) => {
-          alert("Failed to add new person");
+        .catch(() => {
+          showNotification(`Failed to add ${person.name}`, 'error');
         });
     }
   };
@@ -93,9 +105,10 @@ function App() {
       .remove(id)
       .then(() => {
         setPersons(persons.filter((person) => person.id !== id));
+        showNotification(`Deleted ${person.name}`)
       })
-      .catch((error) => {
-        alert("Delete failed", error);
+      .catch(() => {
+        showNotification(`failed to delete ${person.name}`, 'error');
       });
   };
 
@@ -103,9 +116,9 @@ function App() {
     const confirm = window.confirm(`Delete ${name}?`);
     if (confirm) {
       deletePersons(id);
-      alert("item deleted");
+      showNotification(`${name} removed successfully`);
     } else {
-      alert("user cancelled the action");
+      showNotification('action cancelled');
     }
   };
 
@@ -129,7 +142,7 @@ function App() {
   return (
     <>
       <h2>Phonebook</h2>
-
+       <Notification  message = {notification} type = {notificationType}/>
       <InputField
         label={"filter shown with:"}
         value={searchTerm}
